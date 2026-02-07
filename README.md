@@ -13,8 +13,7 @@
 **项目只适合个人使用，不考虑对接云存储，不考虑支持多用户**
 
 # 预览
-
-![cbb17e6d-59e9-43d2-9df4-6ebb7136f007_1770470096113.webp](https://imgs.gost.cloudns.ch/api/v1/image/cbb17e6d-59e9-43d2-9df4-6ebb7136f007_1770470096113.webp)
+![img.png](/images/img.png)
 
 # 部署运行
 
