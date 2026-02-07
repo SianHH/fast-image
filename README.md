@@ -12,11 +12,16 @@
 
 **项目只适合个人使用，不考虑对接云存储，不考虑支持多用户**
 
+# 预览
+
+![cbb17e6d-59e9-43d2-9df4-6ebb7136f007_1770470096113.webp](https://imgs.gost.cloudns.ch/api/v1/image/cbb17e6d-59e9-43d2-9df4-6ebb7136f007_1770470096113.webp)
+
 # 部署运行
 
 ```shell
 ./fast-image 
 ```
+默认账号密码：admin/admin
 
 首次运行会自动在可执行文件所在目录创建data/config.yaml
 
