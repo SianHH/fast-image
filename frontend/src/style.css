@@ -1,0 +1,54 @@
+body {
+    padding: 0;
+    margin: 0;
+    width: 100%;
+    height: 100vh;
+}
+
+.n-drawer-header__main {
+    width: 100%;
+}
+
+.n-drawer {
+    border-radius: 0 !important;
+}
+
+.n-drawer-mask {
+    /* 模糊会卡顿，关闭模糊 */
+    /*backdrop-filter: blur(5px);*/
+}
+
+/* transition fade-slide */
+.fade-slide-leave-active,
+.fade-slide-enter-active {
+    transition: all 0.3s;
+}
+
+.fade-slide-enter-from {
+    opacity: 0;
+    transform: translateX(-20px);
+}
+
+.fade-slide-leave-to {
+    opacity: 0;
+    transform: translateX(20px);
+}
+
+/*  去除聚焦泛光  */
+.n-radio-group {
+    --n-button-box-shadow-focus: none;
+}
+
+.n-radio-button {
+    --n-button-box-shadow-focus: none;
+}
+
+.n-radio__dot {
+    --n-box-shadow-focus: inset 0 0 0 1px #2299ddFF, 0 0 0 0px rgba(34, 153, 221, 0.2);
+}
+
+.header-menu{
+    .n-base-select-menu__empty{
+        padding: 0;
+    }
+}

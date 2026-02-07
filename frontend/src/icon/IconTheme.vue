@@ -1,0 +1,26 @@
+<script setup>
+const props = defineProps({
+  size: {
+    default: null,
+    type: Number,
+  },
+  color: {
+    default: null,
+    type: String,
+  },
+})
+</script>
+
+<template>
+  <n-icon :size="props.size" :color="props.color">
+    <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 512 512">
+      <path
+          d="M8 256c0 136.966 111.033 248 248 248s248-111.034 248-248S392.966 8 256 8S8 119.033 8 256zm248 184V72c101.705 0 184 82.311 184 184c0 101.705-82.311 184-184 184z"
+          fill="currentColor"></path>
+    </svg>
+  </n-icon>
+</template>
+
+<style scoped lang="scss">
+
+</style>

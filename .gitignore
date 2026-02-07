@@ -1,0 +1,7 @@
+.idea
+/backend/data
+/backend/dist
+/backend/build
+/frontend/dist
+/frontend/dist.zip
+/frontend/node_modules
