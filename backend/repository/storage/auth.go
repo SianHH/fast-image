@@ -1,66 +1,58 @@
 package storage
 
 import (
-	"bytes"
-	"fast-image/pkg/utils"
-	"fmt"
 	"time"
-
-	"github.com/dgraph-io/badger/v4"
 )
 
-const (
-	ip_security_key = "security:ip:"
-	captcha_key     = "captcha:"
-)
-
-func SetIpSecurity(ip string, security bool) {
-	_ = db.Update(func(txn *badger.Txn) error {
-		entry := badger.NewEntry([]byte(fmt.Sprintf("%s%s", ip_security_key, ip)), utils.TrinaryOperation(security, []byte{1}, []byte{2}))
-		_ = txn.SetEntry(entry)
-		return nil
-	})
+// IpSecurity 记录 IP 的信任状态：登录成功为 true，失败为 false
+type IpSecurity struct {
+	Ip       string `gorm:"column:ip;primaryKey;size:64"`
+	Security bool   `gorm:"column:security"`
 }
 
+func (IpSecurity) TableName() string { return "ip_security" }
+
+// Captcha 一次性验证码记录
+type Captcha struct {
+	Key      string    `gorm:"column:key;primaryKey;size:64"`
+	Value    string    `gorm:"column:value;size:16"`
+	ExpireAt time.Time `gorm:"column:expire_at"`
+}
+
+func (Captcha) TableName() string { return "captcha" }
+
+func SetIpSecurity(ip string, security bool) {
+	_ = db.Save(&IpSecurity{Ip: ip, Security: security}).Error
+}
+
+// GetIpSecurity 默认（无记录）为不安全状态，需要验证码
 func GetIpSecurity(ip string) (result bool) {
-	_ = db.View(func(txn *badger.Txn) error {
-		item, err := txn.Get([]byte(fmt.Sprintf("%s%s", ip_security_key, ip)))
-		if err != nil {
-			return err
-		}
-		val, err := item.ValueCopy(nil)
-		if err != nil {
-			return err
-		}
-		result = !bytes.Equal(val, []byte{2})
-		return nil
-	})
-	return result
+	var row IpSecurity
+	if err := db.Where("ip = ?", ip).First(&row).Error; err != nil {
+		return false
+	}
+	return row.Security
 }
 
 func SetCaptcha(key string, value string, duration time.Duration) {
-	_ = db.Update(func(txn *badger.Txn) error {
-		k := []byte(fmt.Sprintf("%s%s", captcha_key, key))
-		entry := badger.NewEntry(k, []byte(value)).WithTTL(duration)
-		_ = txn.SetEntry(entry)
-		return nil
-	})
+	_ = db.Save(&Captcha{
+		Key:      key,
+		Value:    value,
+		ExpireAt: time.Now().Add(duration),
+	}).Error
 }
 
+// ValidCaptcha 校验验证码并立即删除（一次性使用）
 func ValidCaptcha(key string, target string) (result bool) {
-	_ = db.Update(func(txn *badger.Txn) error {
-		k := []byte(fmt.Sprintf("%s%s", captcha_key, key))
-		item, err := txn.Get(k)
-		if err != nil {
-			return err
-		}
-		val, err := item.ValueCopy(nil)
-		if err != nil {
-			return err
-		}
-		result = bytes.Equal(val, []byte(target))
-		_ = txn.Delete(k)
-		return nil
-	})
-	return result
+	var row Captcha
+	if err := db.Where("key = ?", key).First(&row).Error; err != nil {
+		return false
+	}
+	_ = db.Where("key = ?", key).Delete(&Captcha{}).Error
+	return row.Value == target && row.ExpireAt.After(time.Now())
+}
+
+// CleanExpiredCaptcha 清理已过期的验证码记录
+func CleanExpiredCaptcha() {
+	_ = db.Where("expire_at < ?", time.Now()).Delete(&Captcha{}).Error
 }

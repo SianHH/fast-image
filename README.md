@@ -1,6 +1,6 @@
 # 介绍
 
-简单的图床，使用golang+vue开发，采用BadgerDB作为存储图片元数据，图片存储在本地目录
+简单的图床，使用golang+vue开发，采用SQLite作为存储图片元数据，图片存储在本地目录
 
 功能局限性：
 
@@ -44,8 +44,8 @@ FI_PASSWORD=admin
 # 程序配置文件，会自动创建
 data/config.yaml
 
-# BadgerDB持久化存储，此目录存储图片的元数据信息
-data/badger/
+# SQLite数据库文件，存储图片的元数据、IP安全状态、验证码等记录
+data/app.db
 
 # HTTP请求日志，忽略了上传图片和请求图片的日志
 data/http_logs/

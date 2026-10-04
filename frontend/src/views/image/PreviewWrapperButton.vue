@@ -76,7 +76,7 @@ onBeforeMount(() => {
 
 <template>
   <div>
-    <div @click="openModal">
+    <div style="width: 100%;height: 100%" @click="openModal">
       <slot></slot>
     </div>
     <n-modal :show="show" :mask-closable="props.maskClosable" :auto-focus="props.autoFocus">

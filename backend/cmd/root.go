@@ -34,7 +34,7 @@ var RootCmd = cobra.Command{
 		bootstrap.InitLogger()
 		bootstrap.InitConfig()
 		bootstrap.InitJwt()
-		bootstrap.InitBadgerDB()
+		bootstrap.InitDB()
 		bootstrap.InitRouter()
 		bootstrap.InitServer()
 		bootstrap.InitTodo()

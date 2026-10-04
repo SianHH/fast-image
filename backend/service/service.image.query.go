@@ -5,24 +5,19 @@ import (
 	"fast-image/repository/storage"
 	"io"
 	"os"
-
-	"github.com/dgraph-io/badger/v4"
 )
 
 func (s *service) ImageQuery(filename string, writer io.Writer) {
-	_ = global.BadgerDB.View(func(txn *badger.Txn) error {
-		img, err := storage.GetImageByFilename(txn, filename)
-		if err != nil {
-			return nil
-		}
+	img, err := storage.GetImageByFilename(filename)
+	if err != nil {
+		return
+	}
 
-		file, err := os.OpenFile(global.GetBasePath()+"/data/images/"+img.GetFilePath(), os.O_RDONLY, 0644)
-		if err != nil {
-			return nil
-		}
-		defer file.Close()
+	file, err := os.OpenFile(global.GetBasePath()+"/data/images/"+img.GetFilePath(), os.O_RDONLY, 0644)
+	if err != nil {
+		return
+	}
+	defer file.Close()
 
-		_, _ = io.Copy(writer, file)
-		return nil
-	})
+	_, _ = io.Copy(writer, file)
 }

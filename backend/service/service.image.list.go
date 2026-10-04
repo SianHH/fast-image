@@ -1,19 +1,16 @@
 package service
 
 import (
-	"fast-image/global"
-	"fast-image/model"
+	"fast-image/pkg/bean"
 	"fast-image/repository/storage"
-	"fmt"
-	"slices"
 	"time"
-
-	"github.com/dgraph-io/badger/v4"
 )
 
 type ImageListReq struct {
 	StartOn string `json:"startOn"`
 	EndOn   string `json:"endOn"`
+	Page    int    `json:"page"`
+	Size    int    `json:"size"`
 }
 
 type ImageItem struct {
@@ -31,43 +28,32 @@ type ImageItem struct {
 	CreatedAt string `json:"createdAt"`
 }
 
-func (s *service) ImageList(req ImageListReq) (list []ImageItem) {
-	prefix := []byte(model.IMAGE_PREFIX)
-	_ = global.BadgerDB.View(func(txn *badger.Txn) error {
-		opts := badger.DefaultIteratorOptions
-		opts.PrefetchValues = false
+// ImageList 分页查询图片记录。
+// startOn/endOn 非必填：为空表示对应边界不限制；page/size 为空时使用默认分页。
+func (s *service) ImageList(req ImageListReq) (any, error) {
+	page := bean.PageParam{Page: req.Page, Size: req.Size}
+	limit := page.GetLimit()
+	offset := page.GetOffset()
 
-		it := txn.NewIterator(opts)
-		defer it.Close()
+	images, total, err := storage.ListImages(req.StartOn, req.EndOn, offset, limit)
+	if err != nil {
+		return nil, err
+	}
 
-		for it.Seek(prefix); it.ValidForPrefix(prefix); it.Next() {
-			fmt.Printf("KEY=%q\n", it.Item().Key())
-			var image model.Image
-			if err := storage.GetStruct(txn, string(it.Item().Key()), &image); err != nil {
-				continue
-			}
-
-			if image.DateOnly < req.StartOn || image.DateOnly > req.EndOn {
-				continue
-			}
-
-			i := ImageItem{
-				Id:        image.Id,
-				Code:      image.Code,
-				Filename:  image.Filename,
-				Size:      image.Size,
-				MD5:       image.MD5,
-				SHA256:    image.SHA256,
-				Width:     image.Width,
-				Height:    image.Height,
-				DateOnly:  image.DateOnly,
-				CreatedAt: image.CreatedAt.Format(time.DateTime),
-			}
-
-			list = append(list, i)
-		}
-		return nil
-	})
-	slices.Reverse(list)
-	return list
+	list := make([]ImageItem, 0, len(images))
+	for _, image := range images {
+		list = append(list, ImageItem{
+			Id:        image.Id,
+			Code:      image.Code,
+			Filename:  image.Filename,
+			Size:      image.Size,
+			MD5:       image.MD5,
+			SHA256:    image.SHA256,
+			Width:     image.Width,
+			Height:    image.Height,
+			DateOnly:  image.DateOnly,
+			CreatedAt: image.CreatedAt.Format(time.DateTime),
+		})
+	}
+	return bean.NewPage(list, total), nil
 }

@@ -8,7 +8,7 @@ import {flowFormat} from "../../utils/flow.js";
 import PreviewWrapperButton from "./PreviewWrapperButton.vue";
 import {copyToClipboardDirect} from "../../utils/copy.js";
 import LoadingModal from "./LoadingModal.vue";
-
+import {appStore} from "../../store/app.js";
 
 const copyType = ref('md')
 watch(() => copyType.value, (val) => {
@@ -30,37 +30,69 @@ const copyContent = (row) => {
 
 const todayData = ref({
   list: [],
+  total: 0,
+  page: 1,
+  pageSize: 24,
   search: {
-    startOn: moment().format('YYYY-MM-DD'),
-    endOn: moment().format('YYYY-MM-DD'),
+    startOn: null,
+    endOn: null,
   },
   loading: true,
-  dateOnly: new Date().getTime(),
 })
 
-watch(() => todayData.value.dateOnly, (val) => {
-  loadTodayImageList()
+// 日期范围选择（非必填，可清空），null 表示不限制
+const dateRange = ref(null)
+watch(() => dateRange.value, (val) => {
+  todayData.search.startOn = val && val[0] ? val[0] : null
+  todayData.search.endOn = val && val[1] ? val[1] : null
 })
 
-const loadTodayImageList = async () => {
+const loadImageList = async () => {
   try {
     todayData.value.loading = true
-    let dateOnly = moment(todayData.value.dateOnly).format('YYYY-MM-DD')
-    todayData.value.search.startOn = dateOnly
-    todayData.value.search.endOn = dateOnly
-    let res = await apiImageList(todayData.value.search)
-    todayData.value.list = res.data || []
+    let params = {
+      page: todayData.value.page,
+      size: todayData.value.pageSize,
+      startOn: todayData.value.search.startOn ? moment(todayData.value.search.startOn).format('YYYY-MM-DD') : '',
+      endOn: todayData.value.search.endOn ? moment(todayData.value.search.endOn).format('YYYY-MM-DD') : '',
+    }
+    let res = await apiImageList(params)
+    todayData.value.list = res.data?.list || []
+    todayData.value.total = res.data?.total || 0
     checkClear()
+    // 删除或条件变化导致当前页无数据时，回退到上一页
+    if (todayData.value.list.length === 0 && todayData.value.page > 1) {
+      todayData.value.page--
+      return loadImageList()
+    }
   } finally {
     todayData.value.loading = false
   }
 }
 
+// 日期条件变化时回到第一页并重新查询
+watch(() => [todayData.value.search.startOn, todayData.value.search.endOn], () => {
+  todayData.value.page = 1
+  loadImageList()
+})
+
+const onPageChange = (page) => {
+  todayData.value.page = page
+  loadImageList()
+}
+
+const onPageSizeChange = (size) => {
+  todayData.value.pageSize = size
+  todayData.value.page = 1
+  loadImageList()
+}
 
 const imageUploadCount = ref(0)
 watch(() => imageUploadCount.value, (val) => {
   if (val === 0) {
-    loadTodayImageList()
+    // 上传完成后回到第一页展示最新图片
+    todayData.value.page = 1
+    loadImageList()
   }
 })
 
@@ -163,16 +195,30 @@ const deleteFunc = async () => {
       }
     })
     await apiImageDelete({ids})
-    await loadTodayImageList()
+    await loadImageList()
     checkClear()
   } finally {
     deleteLoading.value = false
   }
 }
 
+const cardComputed = computed(() => {
+  const width = appStore().width
+  if (width > 1200) {
+    return 4
+  }
+  if (width > 900) {
+    return 3
+  }
+  if (width > 600) {
+    return 2
+  }
+  return 1
+})
+
 onBeforeMount(() => {
   copyType.value = localStore().copyType
-  loadTodayImageList()
+  loadImageList()
 })
 
 </script>
@@ -220,7 +266,7 @@ onBeforeMount(() => {
 
     <n-card size="small" style="width: 100%;max-width: 1200px;margin: 0 auto">
       <template #header>
-        <span style="font-weight: bold">上传记录({{ todayData.list.length }})</span>
+        <span style="font-weight: bold">上传记录({{ todayData.total }})</span>
       </template>
       <template #header-extra>
         <n-space>
@@ -234,28 +280,26 @@ onBeforeMount(() => {
       <n-space style="margin-bottom: 10px" justify="end">
         <n-button size="small" :focusable="false" @click="checkAll">全选</n-button>
         <n-button size="small" :focusable="false" @click="checkReverse">反选</n-button>
-        <n-date-picker size="small" style="width: 110px" v-model:value="todayData.dateOnly" type="date"/>
       </n-space>
       <n-spin :show="todayData.loading">
         <n-empty v-if="todayData.list.length===0" description="无上传记录" style="margin: 50px 0"></n-empty>
-        <n-grid v-else cols="1200:6 800:4 600:3 400:2 1" :x-gap="10" :y-gap="10">
+        <n-grid v-else :cols="cardComputed" :x-gap="12" :y-gap="12">
           <n-grid-item v-for="row in todayData.list" :key="row.id">
-            <n-card size="small" embedded style="box-shadow: 0 0 2px 2px rgba(0,0,0,0.04)">
+            <n-card size="small" embedded>
               <template #header>
-                <div style="opacity: 0.6;font-size: 0.7rem">
-                  {{ row.dateOnly }} {{ flowFormat(row.size) }}
-                </div>
+                <span style="font-size: 0.8rem;opacity: 0.8">{{ row.dateOnly }} {{ flowFormat(row.size) }}</span>
               </template>
               <template #header-extra>
                 <n-checkbox size="large" v-model:checked="row.check"/>
               </template>
-              <div style="aspect-ratio: 1 / 0.6;border-radius: 8px;overflow: hidden">
-                <PreviewWrapperButton :data="row" :mask-closable="true" @refresh="loadTodayImageList">
-                  <img class="images" style="width: 100%;height: 100%;object-fit: cover"
+              <div style="aspect-ratio: 1 / 0.6;border-radius: 8px;overflow: hidden;">
+                <PreviewWrapperButton style="width: 100%;height: 100%" :data="row" :mask-closable="true" @refresh="loadImageList">
+                  <img class="images" loading="lazy" decoding="async"
+                       style="width: 100%;height: 100%;object-fit: cover;display: block"
                        :src="`/api/v1/image/${row.filename}`" alt="">
                 </PreviewWrapperButton>
               </div>
-              <div style="margin-top: 10px">
+              <div style="margin-top: 8px">
                 <n-input
                     @click="copyToClipboardDirect(copyContent(row))"
                     v-if="copyType==='url'"
@@ -275,6 +319,17 @@ onBeforeMount(() => {
             </n-card>
           </n-grid-item>
         </n-grid>
+        <n-space v-if="todayData.total > 0" justify="center" style="margin-top: 12px">
+          <n-pagination
+              :page="todayData.page"
+              :page-size="todayData.pageSize"
+              :item-count="todayData.total"
+              :page-sizes="[12, 24, 48, 96]"
+              show-size-picker
+              @update:page="onPageChange"
+              @update:page-size="onPageSizeChange"
+          />
+        </n-space>
       </n-spin>
     </n-card>
 

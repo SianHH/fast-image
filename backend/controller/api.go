@@ -36,8 +36,12 @@ func ImageList(c *gin.Context) {
 		bean.Response.Param(c, err)
 		return
 	}
-	list := service.Service.ImageList(req)
-	bean.Response.OkData(c, list)
+	data, err := service.Service.ImageList(req)
+	if err != nil {
+		bean.Response.Fail(c, err.Error())
+		return
+	}
+	bean.Response.OkData(c, data)
 }
 
 func ImageUpload(c *gin.Context) {

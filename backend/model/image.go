@@ -16,19 +16,19 @@ func GenImageID() string {
 }
 
 type Image struct {
-	Id   string `json:"id"`
-	Code string `json:"code"`
+	Id   string `json:"id" gorm:"primaryKey;column:id;size:64"`
+	Code string `json:"code" gorm:"column:code;size:64;uniqueIndex"`
 
-	Filename string `json:"filename"`
-	MIME     string `json:"mime"`
-	Size     int64  `json:"size"`
-	MD5      string `json:"md5"`
-	SHA256   string `json:"sha256"`
-	Width    int    `json:"width"`
-	Height   int    `json:"height"`
+	Filename string `json:"filename" gorm:"column:filename;size:256;uniqueIndex"`
+	MIME     string `json:"mime" gorm:"column:mime;size:32"`
+	Size     int64  `json:"size" gorm:"column:size"`
+	MD5      string `json:"md5" gorm:"column:md5;size:32"`
+	SHA256   string `json:"sha256" gorm:"column:sha256;size:64"`
+	Width    int    `json:"width" gorm:"column:width"`
+	Height   int    `json:"height" gorm:"column:height"`
 
-	DateOnly  string    `json:"dateOnly"`
-	CreatedAt time.Time `json:"createdAt"`
+	DateOnly  string    `json:"dateOnly" gorm:"column:date_only;size:16;index"`
+	CreatedAt time.Time `json:"createdAt" gorm:"column:created_at"`
 }
 
 func (i *Image) GetFilePath() string {

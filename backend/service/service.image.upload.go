@@ -25,7 +25,6 @@ import (
 
 	"github.com/gen2brain/webp"
 
-	"github.com/dgraph-io/badger/v4"
 	"github.com/google/uuid"
 )
 
@@ -135,9 +134,7 @@ func (s *service) ImageUpload(r io.Reader) (result model.Image, err error) {
 	img.MD5 = hex.EncodeToString(md5Hash.Sum(nil))
 	img.SHA256 = hex.EncodeToString(sha256Hash.Sum(nil))
 
-	if err := global.BadgerDB.Update(func(txn *badger.Txn) error {
-		return storage.SetImage(txn, img)
-	}); err != nil {
+	if err := storage.SetImage(img); err != nil {
 		return result, err
 	}
 	return img, nil
