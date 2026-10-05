@@ -326,6 +326,7 @@ onBeforeMount(() => {
               :item-count="todayData.total"
               :page-sizes="[12, 24, 48, 96]"
               show-size-picker
+              simple
               @update:page="onPageChange"
               @update:page-size="onPageSizeChange"
           />

@@ -20,7 +20,7 @@ var (
 
 	app_mode AppMode = APP_MODE_PROD
 
-	version = "1.1.1"
+	version = "1.1.2"
 )
 
 func init() {
